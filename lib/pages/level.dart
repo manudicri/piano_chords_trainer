@@ -57,7 +57,6 @@ class _LevelPageState extends State<LevelPage> {
     var down = data[0] == 144;
     if (down && !keyboard.contains(key)) {
       keyboard.add(key);
-      print(keyboard);
       var played = true;
       Chord chord = this.chord!;
       for (int n in chord.notes) {
@@ -112,7 +111,6 @@ class _LevelPageState extends State<LevelPage> {
         chunks.add(packet.data.sublist(
             i, i + 3 > packet.data.length ? packet.data.length : i + 3));
       }
-      print(chunks);
       for (var chunk in chunks) {
         processMidiInput(chunk);
       }
