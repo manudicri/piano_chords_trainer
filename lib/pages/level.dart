@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:ffi';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:piano_chords_trainer/services/data.dart';
 import 'package:piano_chords_trainer/services/midi.dart' as midi;
+import 'package:piano_chords_trainer/services/mytimer.dart';
 
 import '../models/chord.dart';
 
@@ -24,6 +27,9 @@ class _LevelPageState extends State<LevelPage> {
   Chord? chord;
   bool waitForKeysUp = false;
   bool notCorrect = false;
+  MyTimer timer = new MyTimer();
+  int counter = 0;
+  Timer? _everyHalfSecond;
 
   String pickOne(String s) {
     var split = s.split("|");
@@ -44,6 +50,47 @@ class _LevelPageState extends State<LevelPage> {
     return chord;
   }
 
+  void processMidiInput(Uint8List data) {
+    if (data.length < 3) return;
+
+    var key = data[1];
+    var down = data[0] == 144;
+    if (down && !keyboard.contains(key)) {
+      keyboard.add(key);
+      print(keyboard);
+      var played = true;
+      Chord chord = this.chord!;
+      for (int n in chord.notes) {
+        var notFound = true;
+        for (int k in keyboard) {
+          var key = (k) % 12;
+          var note = (n + chord.offset) % 12;
+          if (key == note) {
+            notFound = false;
+            break;
+          }
+        }
+        if (notFound) played = false;
+      }
+      if (played) {
+        waitForKeysUp = true;
+        if (counter == 0) timer.start();
+        counter++;
+      } else {
+        notCorrect = true;
+      }
+    } else {
+      keyboard = keyboard.where((i) => i != key).toList();
+      if (keyboard.length == 0) {
+        notCorrect = false;
+        if (waitForKeysUp) {
+          waitForKeysUp = false;
+          this.chord = generateChord();
+        }
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -60,49 +107,27 @@ class _LevelPageState extends State<LevelPage> {
 
     MidiCommand().connectToDevice(midi.device!);
     this._rxSubscription = MidiCommand().onMidiDataReceived!.listen((packet) {
-      print("PACKET: ${packet.data}");
-      var key = packet.data[1];
-      var down = packet.data[0] == 144;
-      if (down) {
-        keyboard.add(key);
-        var played = true;
-        Chord chord = this.chord!;
-        for (int n in chord.notes) {
-          var notFound = true;
-          for (int k in keyboard) {
-            var key = (k) % 12;
-            var note = (n + chord.offset) % 12;
-            if (key == note) {
-              notFound = false;
-              break;
-            }
-          }
-          if (notFound) played = false;
-        }
-        if (played) {
-          waitForKeysUp = true;
-          setState(() {});
-        } else {
-          notCorrect = true;
-          setState(() {});
-        }
-      } else {
-        keyboard = keyboard.where((i) => i != key).toList();
-        if (keyboard.length == 0) {
-          notCorrect = false;
-          if (waitForKeysUp) {
-            waitForKeysUp = false;
-            this.chord = generateChord();
-          }
-          setState(() {});
-        }
+      var chunks = [];
+      for (var i = 0; i < packet.data.length; i += 3) {
+        chunks.add(packet.data.sublist(
+            i, i + 3 > packet.data.length ? packet.data.length : i + 3));
       }
+      print(chunks);
+      for (var chunk in chunks) {
+        processMidiInput(chunk);
+      }
+      setState(() {});
     });
+    /*
+    _everyHalfSecond = Timer.periodic(Duration(milliseconds: 500), (Timer t) {
+      setState(() {});
+    });*/
   }
 
   @override
   void dispose() {
-    MidiCommand().stopScanningForBluetoothDevices();
+    if (_everyHalfSecond != null) _everyHalfSecond!.cancel();
+    //MidiCommand().stopScanningForBluetoothDevices();
     _rxSubscription.cancel();
     _setupSubscription.cancel();
     super.dispose();
@@ -111,37 +136,45 @@ class _LevelPageState extends State<LevelPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Level " + widget.level.toString()),
-        brightness: Brightness.dark,
-        backgroundColor: waitForKeysUp
-            ? Color(0xff32a852)
-            : notCorrect
-                ? Color(0xffa31808)
-                : colors[2],
-      ),
-      body: Container(
-        child: Center(
-          child: GestureDetector(
-            child: Text(
-              this.chord!.text,
-              style: TextStyle(
-                fontSize: 100,
-                color: waitForKeysUp
-                    ? Color(0xff32a852)
-                    : notCorrect
-                        ? Color(0xffa31808)
-                        : Colors.black,
+        appBar: AppBar(
+          title: Text("Level " + widget.level.toString()),
+          brightness: Brightness.dark,
+          backgroundColor: waitForKeysUp
+              ? Color(0xff32a852)
+              : notCorrect
+                  ? Color(0xffa31808)
+                  : colors[2],
+        ),
+        body: Column(
+          children: [
+            Container(
+              child: Center(
+                child: GestureDetector(
+                  child: Text(
+                    this.chord!.text,
+                    style: TextStyle(
+                      fontSize: 100,
+                      color: waitForKeysUp
+                          ? Color(0xff32a852)
+                          : notCorrect
+                              ? Color(0xffa31808)
+                              : Colors.black,
+                    ),
+                  ),
+                  onTap: () {
+                    setState(() {
+                      chord = generateChord();
+                    });
+                  },
+                ),
               ),
             ),
-            onTap: () {
-              setState(() {
-                chord = generateChord();
-              });
-            },
-          ),
-        ),
-      ),
-    );
+            Container(
+              child: Center(
+                child: Text(timer.getSeconds().toString() + "s"),
+              ),
+            ),
+          ],
+        ));
   }
 }

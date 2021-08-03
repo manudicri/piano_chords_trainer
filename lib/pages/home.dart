@@ -86,9 +86,11 @@ class _MyHomePageState extends State<MyHomePage> {
           IconButton(
             icon: midi.connected ? Icon(Icons.piano) : Icon(Icons.piano_off),
             onPressed: () => {
+              /*
               MidiCommand()
                   .startScanningForBluetoothDevices()
                   .catchError((err) {}),
+                  */
               showDialog(
                 context: context,
                 builder: (_) => AlertDialog(
@@ -99,7 +101,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 ),
               ).then((val) {
-                MidiCommand().stopScanningForBluetoothDevices();
+                //MidiCommand().stopScanningForBluetoothDevices();
               })
             },
           ),
