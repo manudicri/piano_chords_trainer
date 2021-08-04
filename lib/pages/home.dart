@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:piano_chords_trainer/pages/level.dart';
 import 'package:piano_chords_trainer/services/midi.dart' as midi;
+import 'package:url_launcher/url_launcher.dart';
 
 class LevelText {
   String title = "";
@@ -76,6 +77,21 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  showMidiDevicesDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text("Select a MIDI Device"),
+        content: Container(
+          width: 300.0,
+          child: midiDevicesWidget(),
+        ),
+      ),
+    ).then((val) {
+      //MidiCommand().stopScanningForBluetoothDevices();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -84,26 +100,12 @@ class _MyHomePageState extends State<MyHomePage> {
         brightness: Brightness.dark,
         actions: [
           IconButton(
+            icon: Icon(Icons.coffee_rounded),
+            onPressed: () => {launch("https://ko-fi.com/manudicri")},
+          ),
+          IconButton(
             icon: midi.connected ? Icon(Icons.piano) : Icon(Icons.piano_off),
-            onPressed: () => {
-              /*
-              MidiCommand()
-                  .startScanningForBluetoothDevices()
-                  .catchError((err) {}),
-                  */
-              showDialog(
-                context: context,
-                builder: (_) => AlertDialog(
-                  title: Text("Select a MIDI Device"),
-                  content: Container(
-                    width: 300.0,
-                    child: midiDevicesWidget(),
-                  ),
-                ),
-              ).then((val) {
-                //MidiCommand().stopScanningForBluetoothDevices();
-              })
-            },
+            onPressed: showMidiDevicesDialog,
           ),
         ],
       ),
@@ -135,6 +137,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             child: Text("OK"),
                             onPressed: () {
                               Navigator.pop(context);
+                              showMidiDevicesDialog();
                             },
                           )
                         ],

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ffi';
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -29,6 +28,7 @@ class _LevelPageState extends State<LevelPage> {
   bool notCorrect = false;
   MyTimer timer = new MyTimer();
   int counter = 0;
+  int counterMax = 20;
   Timer? _everyHalfSecond;
 
   String pickOne(String s) {
@@ -52,7 +52,6 @@ class _LevelPageState extends State<LevelPage> {
 
   void processMidiInput(Uint8List data) {
     if (data.length < 3) return;
-
     var key = data[1];
     var down = data[0] == 144;
     if (down && !keyboard.contains(key)) {
@@ -72,9 +71,11 @@ class _LevelPageState extends State<LevelPage> {
         if (notFound) played = false;
       }
       if (played) {
-        waitForKeysUp = true;
-        if (counter == 0) timer.start();
-        counter++;
+        if (!waitForKeysUp) {
+          waitForKeysUp = true;
+          if (counter == 0) timer.start();
+          counter++;
+        }
       } else {
         notCorrect = true;
       }
@@ -116,10 +117,9 @@ class _LevelPageState extends State<LevelPage> {
       }
       setState(() {});
     });
-    /*
     _everyHalfSecond = Timer.periodic(Duration(milliseconds: 500), (Timer t) {
       setState(() {});
-    });*/
+    });
   }
 
   @override
@@ -134,45 +134,193 @@ class _LevelPageState extends State<LevelPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: Text("Level " + widget.level.toString()),
-          brightness: Brightness.dark,
-          backgroundColor: waitForKeysUp
-              ? Color(0xff32a852)
-              : notCorrect
-                  ? Color(0xffa31808)
-                  : colors[2],
-        ),
-        body: Column(
-          children: [
-            Container(
-              child: Center(
-                child: GestureDetector(
-                  child: Text(
-                    this.chord!.text,
-                    style: TextStyle(
-                      fontSize: 100,
-                      color: waitForKeysUp
-                          ? Color(0xff32a852)
-                          : notCorrect
-                              ? Color(0xffa31808)
-                              : Colors.black,
+      backgroundColor: colors[5],
+      appBar: AppBar(
+        title: Text("Level " + widget.level.toString()),
+        brightness: Brightness.dark,
+        backgroundColor: waitForKeysUp
+            ? Color(0xff32a852)
+            : notCorrect
+                ? Color(0xffa31808)
+                : colors[2],
+        actions: [
+          IconButton(
+            onPressed: () {},
+            icon: Icon(Icons.settings),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 20, left: 20, right: 20),
+            child: Container(
+              height: 60,
+              decoration: BoxDecoration(
+                color: colors[5],
+                border: Border.all(
+                  color: colors[5],
+                ),
+                borderRadius: BorderRadius.all(
+                  Radius.circular(10),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.15),
+                    spreadRadius: 2,
+                    blurRadius: 5,
+                    offset: Offset(0, 3), // changes position of shadow
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        counter.toString() + "/" + counterMax.toString(),
+                        style: TextStyle(
+                          color: colors[2],
+                          fontSize: 25,
+                        ),
+                      ),
                     ),
                   ),
-                  onTap: () {
-                    setState(() {
-                      chord = generateChord();
-                    });
-                  },
-                ),
+                  VerticalDivider(),
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        timer.getSeconds().toString().split(".")[0] + "s",
+                        style: TextStyle(
+                          color: colors[2],
+                          //fontWeight: FontWeight.bold,
+                          fontSize: 25,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
+          ),
+          /*
+            Padding(
+              padding: const EdgeInsets.only(top: 20, left: 5, right: 5),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Container(
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: colors[2],
+                          border: Border.all(
+                            color: colors[2],
+                          ),
+                          borderRadius: BorderRadius.all(
+                            Radius.circular(10),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.3),
+                              spreadRadius: 2,
+                              blurRadius: 5,
+                              offset:
+                                  Offset(0, 3), // changes position of shadow
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            counter.toString() + "/" + counterMax.toString(),
+                            style: TextStyle(
+                              color: colors[5],
+                              fontSize: 25,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Container(
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: colors[5],
+                          border: Border.all(
+                            color: colors[5],
+                          ),
+                          borderRadius: BorderRadius.all(
+                            Radius.circular(10),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.3),
+                              spreadRadius: 2,
+                              blurRadius: 5,
+                              offset:
+                                  Offset(0, 3), // changes position of shadow
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            timer.getSeconds().toString().split(".")[0] + "s",
+                            style: TextStyle(
+                              color: colors[2],
+                              fontWeight: FontWeight.bold,
+                              fontSize: 25,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            */
+          /*
             Container(
               child: Center(
-                child: Text(timer.getSeconds().toString() + "s"),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 100, 0, 20),
+                  child: Text(counter.toString() + "/" + counterMax.toString(),
+                      style: TextStyle(
+                        fontSize: 25,
+                      )),
+                ),
+              ),
+            ),*/
+          Container(
+            child: Center(
+              child: GestureDetector(
+                child: Text(
+                  this.chord!.text,
+                  style: TextStyle(
+                    fontSize: 100,
+                    color: waitForKeysUp
+                        ? Color(0xff32a852)
+                        : notCorrect
+                            ? Color(0xffa31808)
+                            : Colors.black,
+                  ),
+                ),
+                onTap: () {
+                  setState(() {
+                    chord = generateChord();
+                  });
+                },
               ),
             ),
-          ],
-        ));
+          ),
+        ],
+      ),
+    );
   }
 }
