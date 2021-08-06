@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:piano_chords_trainer/pages/level.dart';
+import 'package:piano_chords_trainer/services/data.dart';
 import 'package:piano_chords_trainer/services/midi.dart' as midi;
 import 'package:url_launcher/url_launcher.dart';
 
@@ -94,7 +95,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    double tileBorderRadius = 10;
     return Scaffold(
+      backgroundColor: colors[5].withOpacity(0.98),
       appBar: AppBar(
         title: Text("Piano Chords Trainer"),
         brightness: Brightness.dark,
@@ -114,38 +117,82 @@ class _MyHomePageState extends State<MyHomePage> {
           itemCount: levelTexts.length,
           itemBuilder: (context, index) {
             var levelText = levelTexts[index];
-            return ListTile(
-              title: Text(levelText.title),
-              subtitle: Text(levelText.subtitle),
-              onTap: () {
-                if (midi.connected) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => LevelPage(level: index + 1),
+            return Padding(
+              padding: EdgeInsets.only(left: 20, right: 20, top: 15, bottom: 0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: colors[5],
+                  borderRadius: BorderRadius.all(
+                    Radius.circular(tileBorderRadius),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.4),
+                      spreadRadius: -7,
+                      blurRadius: 10,
+                      offset: Offset(0, 3), // changes position of shadow
                     ),
-                  );
-                } else {
-                  showDialog(
-                    context: context,
-                    builder: (context) {
-                      return AlertDialog(
-                        title: Text("Warning"),
-                        content: Text("Connect to MIDI device first"),
-                        actions: [
-                          TextButton(
-                            child: Text("OK"),
-                            onPressed: () {
-                              Navigator.pop(context);
-                              showMidiDevicesDialog();
-                            },
-                          )
-                        ],
-                      );
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    customBorder: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(tileBorderRadius)),
+                    onTap: () {
+                      if (midi.connected) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => LevelPage(level: index + 1),
+                          ),
+                        );
+                      } else {
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            return AlertDialog(
+                              title: Text("Warning"),
+                              content: Text("Connect to MIDI device first"),
+                              actions: [
+                                TextButton(
+                                  child: Text("OK"),
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    showMidiDevicesDialog();
+                                  },
+                                )
+                              ],
+                            );
+                          },
+                        );
+                      }
                     },
-                  );
-                }
-              },
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                          left: 20, right: 20, top: 20, bottom: 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            levelText.title,
+                            style: TextStyle(
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            levelText.subtitle,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Color(0xff777777),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             );
           },
         ),
