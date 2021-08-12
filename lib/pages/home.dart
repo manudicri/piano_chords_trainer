@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:piano_chords_trainer/pages/level.dart';
+import 'package:piano_chords_trainer/pages/settings.dart';
 import 'package:piano_chords_trainer/services/data.dart';
 import 'package:piano_chords_trainer/services/midi.dart' as midi;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class LevelText {
@@ -41,6 +44,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  List<int> _stars = [];
+
   Future getMidiDevices() async {
     List<MidiDevice>? devices = await MidiCommand().devices;
     return devices;
@@ -93,6 +98,50 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  Future<void> setOptimalDisplayMode() async {
+    final List<DisplayMode> supported = await FlutterDisplayMode.supported;
+    final DisplayMode active = await FlutterDisplayMode.active;
+    final List<DisplayMode> sameResolution = supported
+        .where((DisplayMode m) =>
+            m.width == active.width && m.height == active.height)
+        .toList()
+          ..sort((DisplayMode a, DisplayMode b) =>
+              b.refreshRate.compareTo(a.refreshRate));
+    final DisplayMode mostOptimalMode =
+        sameResolution.isNotEmpty ? sameResolution.first : active;
+    await FlutterDisplayMode.setPreferredMode(mostOptimalMode);
+  }
+
+  int getStarsByLevel(int level) {
+    if (level > _stars.length) {
+      return 0;
+    } else {
+      return _stars.elementAt(level - 1);
+    }
+  }
+
+  void loadStars() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _stars = [];
+      levelTexts.asMap().forEach((index, value) {
+        int? stars = prefs.getInt("level" + (index + 1).toString());
+        if (stars != null) {
+          _stars.add(stars);
+        } else {
+          _stars.add(0);
+        }
+      });
+    });
+  }
+
+  @override
+  void initState() {
+    setOptimalDisplayMode();
+    loadStars();
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     double tileBorderRadius = 10;
@@ -101,22 +150,49 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text("Piano Chords Trainer"),
         brightness: Brightness.dark,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.coffee_rounded),
-            onPressed: () => {launch("https://ko-fi.com/manudicri")},
-          ),
+        actions: <Widget>[
           IconButton(
             icon: midi.connected ? Icon(Icons.piano) : Icon(Icons.piano_off),
             onPressed: showMidiDevicesDialog,
           ),
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              switch (value) {
+                case "Settings":
+                  Navigator.of(context)
+                      .push(
+                        MaterialPageRoute(
+                          builder: (_) => SettingsPage(),
+                        ),
+                      )
+                      .then((value) => loadStars());
+                  break;
+                case "Donate":
+                  launch("https://ko-fi.com/manudicri");
+                  break;
+                case "Info":
+                  showAboutDialog(context: context);
+                  break;
+              }
+            },
+            itemBuilder: (BuildContext context) {
+              return {"Settings", "Donate", "Info"}.map((String choice) {
+                return PopupMenuItem<String>(
+                  value: choice,
+                  child: Text(choice),
+                );
+              }).toList();
+            },
+          )
         ],
       ),
       body: Container(
         child: ListView.builder(
           itemCount: levelTexts.length,
           itemBuilder: (context, index) {
-            var levelText = levelTexts[index];
+            LevelText levelText = levelTexts[index];
+            int stars = getStarsByLevel(index + 1);
+            bool completed = stars == 5;
             return Padding(
               padding: EdgeInsets.only(left: 20, right: 20, top: 15, bottom: 0),
               child: Container(
@@ -146,7 +222,9 @@ class _MyHomePageState extends State<MyHomePage> {
                           MaterialPageRoute(
                             builder: (_) => LevelPage(level: index + 1),
                           ),
-                        );
+                        ).then((context) {
+                          loadStars();
+                        });
                       } else {
                         showDialog(
                           context: context,
@@ -171,21 +249,49 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: Padding(
                       padding: EdgeInsets.only(
                           left: 20, right: 20, top: 20, bottom: 20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            levelText.title,
-                            style: TextStyle(
-                              fontSize: 16,
-                            ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                levelText.title,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                ),
+                              ),
+                              Text(
+                                levelText.subtitle,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xff777777),
+                                ),
+                              ),
+                            ],
                           ),
-                          Text(
-                            levelText.subtitle,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Color(0xff777777),
-                            ),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.only(right: 5),
+                                child: Text(
+                                  stars.toString(),
+                                  style: TextStyle(
+                                    fontSize: 17,
+                                    color: completed
+                                        ? Color(0xff3474e0)
+                                        : colors[0],
+                                  ),
+                                ),
+                              ),
+                              Icon(
+                                Icons.star,
+                                size: 22,
+                                color:
+                                    completed ? Color(0xff3474e0) : colors[0],
+                              ),
+                            ],
                           ),
                         ],
                       ),

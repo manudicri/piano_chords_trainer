@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:piano_chords_trainer/models/chord.dart';
 
-const sup7 = "\u2077";
-const sup9 = "\u2079";
-const sup11 = "\u00B9\u00B9";
-const supM = "\u1d50";
-const supMajor = supM + "\u1d43\u02b2";
-const supMinor = supM + "\u2071\u1d50";
+const sup7 = "<sup>7</sup>";
+const sup9 = "<sup>9</sup>";
+const sup11 = "<sup>11</sup>";
+const supMajor = "<sup>maj</sup>";
+const supMinor = "<sup>min</sup>";
 
 List<String> keyNotes = [
   "C",

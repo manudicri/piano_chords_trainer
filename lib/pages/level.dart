@@ -2,13 +2,16 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:piano_chords_trainer/services/data.dart';
 import 'package:piano_chords_trainer/services/midi.dart' as midi;
 import 'package:piano_chords_trainer/services/mytimer.dart';
+import 'package:flutter_html/flutter_html.dart';
 
 import '../models/chord.dart';
+import 'levelend.dart';
 
 class LevelPage extends StatefulWidget {
   LevelPage({Key? key, required this.level}) : super(key: key);
@@ -37,17 +40,43 @@ class _LevelPageState extends State<LevelPage> {
   }
 
   Chord generateChord() {
-    Chord chord = new Chord();
     var levelChordTypes =
         chordTypes.where((c) => c.levels.contains(widget.level)).toList();
-
-    chord.type = levelChordTypes[random.nextInt(levelChordTypes.length)];
-    chord.offset = random.nextInt(12);
-    chord.text =
-        pickOne(keyNotes[chord.offset]) + pickOne(chord.type!.text.short);
-    chord.notes = List.from(chord.type!.notes);
+    Chord chord = new Chord();
+    chord
+      ..type = levelChordTypes[random.nextInt(levelChordTypes.length)]
+      ..offset = random.nextInt(12)
+      ..text = pickOne(keyNotes[chord.offset]) + pickOne(chord.type!.text.short)
+      ..notes = List.from(chord.type!.notes);
 
     return chord;
+  }
+
+  void waitNextChord() {
+    if (!waitForKeysUp) {
+      waitForKeysUp = true;
+      if (counter == 0) timer.start();
+      counter++;
+      if (counter == counterMax) {
+        timer.end();
+        double seconds = timer.getSeconds();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => LevelEndPage(seconds: seconds, level: widget.level),
+          ),
+        );
+        counter = 0;
+        timer.reset();
+      }
+    }
+  }
+
+  void nextChord() {
+    if (waitForKeysUp) {
+      waitForKeysUp = false;
+      this.chord = generateChord();
+    }
   }
 
   void processMidiInput(Uint8List data) {
@@ -71,11 +100,7 @@ class _LevelPageState extends State<LevelPage> {
         if (notFound) played = false;
       }
       if (played) {
-        if (!waitForKeysUp) {
-          waitForKeysUp = true;
-          if (counter == 0) timer.start();
-          counter++;
-        }
+        waitNextChord();
       } else {
         notCorrect = true;
       }
@@ -83,10 +108,7 @@ class _LevelPageState extends State<LevelPage> {
       keyboard = keyboard.where((i) => i != key).toList();
       if (keyboard.length == 0) {
         notCorrect = false;
-        if (waitForKeysUp) {
-          waitForKeysUp = false;
-          this.chord = generateChord();
-        }
+        nextChord();
       }
     }
   }
@@ -117,7 +139,7 @@ class _LevelPageState extends State<LevelPage> {
       }
       setState(() {});
     });
-    _everyHalfSecond = Timer.periodic(Duration(milliseconds: 500), (Timer t) {
+    _everyHalfSecond = Timer.periodic(Duration(milliseconds: 100), (Timer t) {
       setState(() {});
     });
   }
@@ -152,171 +174,94 @@ class _LevelPageState extends State<LevelPage> {
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 20, left: 20, right: 20),
-            child: Container(
-              height: 60,
-              decoration: BoxDecoration(
+          Container(
+            margin: const EdgeInsets.only(top: 20, left: 20, right: 20),
+            height: 60,
+            decoration: BoxDecoration(
+              color: colors[5],
+              border: Border.all(
                 color: colors[5],
-                border: Border.all(
-                  color: colors[5],
-                ),
-                borderRadius: BorderRadius.all(
-                  Radius.circular(10),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.15),
-                    spreadRadius: 2,
-                    blurRadius: 5,
-                    offset: Offset(0, 3), // changes position of shadow
-                  ),
-                ],
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        counter.toString() + "/" + counterMax.toString(),
-                        style: TextStyle(
-                          color: colors[2],
-                          fontSize: 25,
-                        ),
+              borderRadius: BorderRadius.all(
+                Radius.circular(10),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.15),
+                  spreadRadius: 2,
+                  blurRadius: 5,
+                  offset: Offset(0, 3), // changes position of shadow
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      counter.toString() + "/" + counterMax.toString(),
+                      style: TextStyle(
+                        color: colors[2],
+                        fontSize: 25,
                       ),
                     ),
                   ),
-                  VerticalDivider(),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        timer.getSeconds().toString().split(".")[0] + "s",
-                        style: TextStyle(
-                          color: colors[2],
-                          //fontWeight: FontWeight.bold,
-                          fontSize: 25,
-                        ),
+                ),
+                VerticalDivider(),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      timer.getSeconds().toString().split(".")[0] + "s",
+                      style: TextStyle(
+                        color: colors[2],
+                        //fontWeight: FontWeight.bold,
+                        fontSize: 25,
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-          /*
-            Padding(
-              padding: const EdgeInsets.only(top: 20, left: 5, right: 5),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Container(
-                        height: 60,
-                        decoration: BoxDecoration(
-                          color: colors[2],
-                          border: Border.all(
-                            color: colors[2],
-                          ),
-                          borderRadius: BorderRadius.all(
-                            Radius.circular(10),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.3),
-                              spreadRadius: 2,
-                              blurRadius: 5,
-                              offset:
-                                  Offset(0, 3), // changes position of shadow
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            counter.toString() + "/" + counterMax.toString(),
-                            style: TextStyle(
-                              color: colors[5],
-                              fontSize: 25,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Container(
-                        height: 60,
-                        decoration: BoxDecoration(
-                          color: colors[5],
-                          border: Border.all(
-                            color: colors[5],
-                          ),
-                          borderRadius: BorderRadius.all(
-                            Radius.circular(10),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.3),
-                              spreadRadius: 2,
-                              blurRadius: 5,
-                              offset:
-                                  Offset(0, 3), // changes position of shadow
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            timer.getSeconds().toString().split(".")[0] + "s",
-                            style: TextStyle(
-                              color: colors[2],
-                              fontWeight: FontWeight.bold,
-                              fontSize: 25,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            */
-          /*
-            Container(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 100, 0, 20),
-                  child: Text(counter.toString() + "/" + counterMax.toString(),
-                      style: TextStyle(
-                        fontSize: 25,
-                      )),
-                ),
-              ),
-            ),*/
           Container(
-            child: Center(
-              child: GestureDetector(
-                child: Text(
-                  this.chord!.text,
-                  style: TextStyle(
-                    fontSize: 100,
+            margin: EdgeInsets.only(top: 30),
+            child: GestureDetector(
+              child: Html(
+                data: "<p>" + this.chord!.text + "</p>",
+                style: {
+                  "p": Style(
+                    textAlign: TextAlign.center,
                     color: waitForKeysUp
                         ? Color(0xff32a852)
                         : notCorrect
                             ? Color(0xffa31808)
                             : Colors.black,
+                    fontSize: FontSize.percent(600),
                   ),
-                ),
-                onTap: () {
-                  setState(() {
-                    chord = generateChord();
-                  });
                 },
               ),
+              /*
+              child: Text(
+                this.chord!.text,
+                style: TextStyle(
+                  fontSize: 100,
+                  color: waitForKeysUp
+                      ? Color(0xff32a852)
+                      : notCorrect
+                          ? Color(0xffa31808)
+                          : Colors.black,
+                ),
+              ),*/
+              onTap: () {
+                assert(() {
+                  setState(() {
+                    waitNextChord();
+                    nextChord();
+                  });
+                  return true;
+                }());
+              },
             ),
           ),
         ],

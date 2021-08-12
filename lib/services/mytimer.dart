@@ -17,7 +17,12 @@ class MyTimer {
     this._endTime = nowMs();
   }
 
-  getSeconds() {
+  reset() {
+    this._startTime = nowMs();
+    this._endTime = nowMs();
+  }
+
+  double getSeconds() {
     var end = this._on ? nowMs() : this._endTime;
     return (end - this._startTime) / 1000;
   }

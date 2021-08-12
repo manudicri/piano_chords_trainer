@@ -30,6 +30,12 @@ dependencies:
   cupertino_icons: ^1.0.2
   flutter_midi_command: ^0.3.7
   url_launcher: ^6.0.9
+  flutter_displaymode: ^0.3.2
+  google_fonts: ^2.1.0
+  flutter_rating_bar: ^4.0.0
+  shared_preferences: ^2.0.6
+  settings_ui: ^1.0.0
+  flutter_html: ^2.1.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
