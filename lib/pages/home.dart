@@ -30,8 +30,18 @@ List<LevelText> levelTexts = [
   LevelText("Level 13", "Major 9th chords"),
   LevelText("Level 14", "Minor 9th chords"),
   LevelText("Level 15", "Dominant 9th chords"),
-  LevelText("Level 16", "Dominant major 9th chords"),
-  LevelText("Level 17", "Dominant minor 9th chords")
+  LevelText("Level 16", "Dominant minor 9th chords"),
+  LevelText("Level 17", "All 9th chords"),
+  LevelText("Level 18", "All 7th & 9th chords"),
+  LevelText("Level 19", "11th chords"),
+  LevelText("Level 20", "Major 11th chords"),
+  LevelText("Level 21", "Minor 11th chords"),
+  LevelText("Level 22", "All 11th chords"),
+  LevelText("Level 23", "All 7th, 9th & 11th chords"),
+  LevelText("Level 24", "13th chords"),
+  LevelText("Level 25", "Major 13th chords"),
+  LevelText("Level 26", "Minor 13th chords"),
+  LevelText("Level 27", "All chords"),
 ];
 
 class MyHomePage extends StatefulWidget {
@@ -71,8 +81,15 @@ class _MyHomePageState extends State<MyHomePage> {
               trailing: device.type == "BLE" ? Icon(Icons.bluetooth) : null,
               onTap: () {
                 Navigator.pop(context);
-                midi.connected = true;
-                midi.device = device;
+                if (midi.connected) {
+                  MidiCommand().disconnectDevice(midi.device!);
+                  midi.connected = false;
+                }
+                if (!midi.connected) {
+                  MidiCommand().connectToDevice(device);
+                  midi.device = device;
+                  midi.connected = true;
+                }
                 setState(() {});
               },
             );
@@ -186,24 +203,25 @@ class _MyHomePageState extends State<MyHomePage> {
           )
         ],
       ),
-      body: Container(
-        child: ListView.builder(
-          itemCount: levelTexts.length,
-          itemBuilder: (context, index) {
-            LevelText levelText = levelTexts[index];
-            int stars = getStarsByLevel(index + 1);
-            bool completed = stars == 5;
-            return Padding(
-              padding: EdgeInsets.only(left: 20, right: 20, top: 15, bottom: 0),
+      body: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.max,
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.all(8.0),
               child: Container(
+                margin: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
                 decoration: BoxDecoration(
-                  color: colors[5],
+                  gradient: LinearGradient(
+                      colors: [Color(0xff3474e0), Color(0xff4881e3)]),
+                  color: Color(0xff3474e0),
                   borderRadius: BorderRadius.all(
                     Radius.circular(tileBorderRadius),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.4),
+                      color: Color(0xff3474e0).withOpacity(1), // 5c8fe6
                       spreadRadius: -7,
                       blurRadius: 10,
                       offset: Offset(0, 3), // changes position of shadow
@@ -213,85 +231,22 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
+                    splashColor: Color(0x11ffffff),
+                    highlightColor: Colors.transparent,
                     customBorder: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(tileBorderRadius)),
-                    onTap: () {
-                      if (midi.connected) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => LevelPage(level: index + 1),
-                          ),
-                        ).then((context) {
-                          loadStars();
-                        });
-                      } else {
-                        showDialog(
-                          context: context,
-                          builder: (context) {
-                            return AlertDialog(
-                              title: Text("Warning"),
-                              content: Text("Connect to MIDI device first"),
-                              actions: [
-                                TextButton(
-                                  child: Text("OK"),
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                    showMidiDevicesDialog();
-                                  },
-                                )
-                              ],
-                            );
-                          },
-                        );
-                      }
-                    },
+                    onTap: () {},
                     child: Padding(
-                      padding: EdgeInsets.only(
-                          left: 20, right: 20, top: 20, bottom: 20),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 25, horizontal: 20),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                levelText.title,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                ),
-                              ),
-                              Text(
-                                levelText.subtitle,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Color(0xff777777),
-                                ),
-                              ),
-                            ],
-                          ),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Padding(
-                                padding: EdgeInsets.only(right: 5),
-                                child: Text(
-                                  stars.toString(),
-                                  style: TextStyle(
-                                    fontSize: 17,
-                                    color: completed
-                                        ? Color(0xff3474e0)
-                                        : colors[0],
-                                  ),
-                                ),
-                              ),
-                              Icon(
-                                Icons.star,
-                                size: 22,
-                                color:
-                                    completed ? Color(0xff3474e0) : colors[0],
-                              ),
-                            ],
+                          Text(
+                            "ENDLESS RANDOM MODE",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                            ),
                           ),
                         ],
                       ),
@@ -299,8 +254,128 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 ),
               ),
-            );
-          },
+            ),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
+              itemCount: levelTexts.length,
+              itemBuilder: (context, index) {
+                LevelText levelText = levelTexts[index];
+                int stars = getStarsByLevel(index + 1);
+                bool completed = stars == 5;
+                return Padding(
+                  padding:
+                      EdgeInsets.only(left: 20, right: 20, top: 15, bottom: 0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: colors[5],
+                      borderRadius: BorderRadius.all(
+                        Radius.circular(tileBorderRadius),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.4),
+                          spreadRadius: -7,
+                          blurRadius: 10,
+                          offset: Offset(0, 3), // changes position of shadow
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        customBorder: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(tileBorderRadius)),
+                        onTap: () {
+                          if (midi.connected) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => LevelPage(level: index + 1),
+                              ),
+                            ).then((context) {
+                              loadStars();
+                            });
+                          } else {
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return AlertDialog(
+                                  title: Text("Warning"),
+                                  content: Text("Connect to MIDI device first"),
+                                  actions: [
+                                    TextButton(
+                                      child: Text("OK"),
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                        showMidiDevicesDialog();
+                                      },
+                                    )
+                                  ],
+                                );
+                              },
+                            );
+                          }
+                        },
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                              left: 20, right: 20, top: 20, bottom: 20),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    levelText.title,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  Text(
+                                    levelText.subtitle,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xff777777),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Padding(
+                                    padding: EdgeInsets.only(right: 5),
+                                    child: Text(
+                                      stars.toString(),
+                                      style: TextStyle(
+                                        fontSize: 17,
+                                        color: completed
+                                            ? Color(0xff3474e0)
+                                            : colors[0],
+                                      ),
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.star,
+                                    size: 22,
+                                    color: completed
+                                        ? Color(0xff3474e0)
+                                        : colors[0],
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
         ),
       ),
     );

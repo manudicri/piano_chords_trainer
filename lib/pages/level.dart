@@ -22,6 +22,7 @@ class LevelPage extends StatefulWidget {
 }
 
 class _LevelPageState extends State<LevelPage> {
+  MidiCommand _midiCommand = MidiCommand();
   Random random = new Random();
   late StreamSubscription<String> _setupSubscription;
   late StreamSubscription<MidiPacket> _rxSubscription;
@@ -39,16 +40,51 @@ class _LevelPageState extends State<LevelPage> {
     return split[random.nextInt(split.length)];
   }
 
+  bool getRandomBool(int? p) {
+    return random.nextInt(100) < (p ?? 50);
+  }
+
   Chord generateChord() {
+    var notationSetting = "Long"; // or Long
+
     var levelChordTypes =
         chordTypes.where((c) => c.levels.contains(widget.level)).toList();
     Chord chord = new Chord();
     chord
       ..type = levelChordTypes[random.nextInt(levelChordTypes.length)]
       ..offset = random.nextInt(12)
-      ..text = pickOne(keyNotes[chord.offset]) + pickOne(chord.type!.text.short)
-      ..notes = List.from(chord.type!.notes);
+      ..notes = List.from(chord.type.notes);
 
+    var levelChordAdds =
+        chordAdds.where((c) => c.levels.contains(widget.level)).toList();
+    if (levelChordAdds.isNotEmpty) {
+      chord.add = levelChordAdds[random.nextInt(levelChordAdds.length)];
+    }
+    var levelChordSus =
+        chordSus.where((c) => c.levels.contains(widget.level)).toList();
+    if (levelChordSus.isNotEmpty) {
+      chord.sus = levelChordSus[random.nextInt(levelChordSus.length)];
+    }
+    var noteText = pickOne(keyNotes[chord.offset]);
+    var notation = "";
+    var extra = "";
+    switch (notationSetting) {
+      case "Short":
+        notation = pickOne(chord.type.text.short);
+        break;
+      case "Long":
+        notation = pickOne(chord.type.text.long);
+        break;
+      default:
+        notation = pickOne(chord.type.text.long);
+    }
+    if (chord.add != null) {
+      extra += "<sup>add" + pickOne(chord.add!.text) + "</sup>";
+    }
+    if (chord.sus != null) {
+      extra += pickOne(chord.sus!.text);
+    }
+    chord.text = noteText + notation + extra;
     return chord;
   }
 
@@ -116,7 +152,8 @@ class _LevelPageState extends State<LevelPage> {
   @override
   void initState() {
     super.initState();
-    _setupSubscription = MidiCommand().onMidiSetupChanged!.listen((data) {
+    if (!midi.connected) MidiCommand().connectToDevice(midi.device!);
+    this._setupSubscription = MidiCommand().onMidiSetupChanged!.listen((data) {
       switch (data) {
         case "deviceFound":
           setState(() {});
@@ -126,8 +163,6 @@ class _LevelPageState extends State<LevelPage> {
       }
     });
     this.chord = generateChord();
-
-    MidiCommand().connectToDevice(midi.device!);
     this._rxSubscription = MidiCommand().onMidiDataReceived!.listen((packet) {
       var chunks = [];
       for (var i = 0; i < packet.data.length; i += 3) {

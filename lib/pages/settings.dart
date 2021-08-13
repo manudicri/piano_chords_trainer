@@ -87,7 +87,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             "There won't be much to lose.\nEach level will return to having 0 stars."),
                         actions: [
                           TextButton(
-                            child: Text('ANNULLA'),
+                            child: Text('CANCEL'),
                             onPressed: () => Navigator.of(context).pop(),
                           ),
                           TextButton(
