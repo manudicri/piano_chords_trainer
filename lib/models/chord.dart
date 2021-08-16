@@ -1,3 +1,7 @@
+import 'dart:math';
+
+import 'package:piano_chords_trainer/services/data.dart';
+
 class ChordType {
   String name;
   ChordTypeText text;
@@ -59,6 +63,20 @@ class Chord {
 
   ChordType get type {
     return this._type ?? ChordType();
+  }
+
+  ChordType setRandomChordType() {
+    Random random = Random();
+    double u = chordTypes.fold(0, (sum, item) => sum + item.prob);
+    double r = random.nextDouble() * u;
+    double sum = 0;
+    for (ChordType n in chordTypes) {
+      if (r <= (sum = sum + n.prob)) {
+        this._type = n;
+        return type;
+      }
+    }
+    return type;
   }
 
   set type(ChordType chordType) {

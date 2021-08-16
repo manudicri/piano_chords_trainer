@@ -7,6 +7,7 @@ import 'package:piano_chords_trainer/services/data.dart';
 import 'package:piano_chords_trainer/services/midi.dart' as midi;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class LevelText {
   String title = "";
@@ -115,18 +116,25 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  Future<void> setOptimalDisplayMode() async {
-    final List<DisplayMode> supported = await FlutterDisplayMode.supported;
-    final DisplayMode active = await FlutterDisplayMode.active;
-    final List<DisplayMode> sameResolution = supported
-        .where((DisplayMode m) =>
-            m.width == active.width && m.height == active.height)
-        .toList()
-          ..sort((DisplayMode a, DisplayMode b) =>
-              b.refreshRate.compareTo(a.refreshRate));
-    final DisplayMode mostOptimalMode =
-        sameResolution.isNotEmpty ? sameResolution.first : active;
-    await FlutterDisplayMode.setPreferredMode(mostOptimalMode);
+  showMidiAlertDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Warning"),
+          content: Text("Connect to MIDI device first"),
+          actions: [
+            TextButton(
+              child: Text("OK"),
+              onPressed: () {
+                Navigator.pop(context);
+                showMidiDevicesDialog();
+              },
+            )
+          ],
+        );
+      },
+    );
   }
 
   int getStarsByLevel(int level) {
@@ -154,7 +162,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void initState() {
-    setOptimalDisplayMode();
     loadStars();
     super.initState();
   }
@@ -188,7 +195,14 @@ class _MyHomePageState extends State<MyHomePage> {
                   launch("https://ko-fi.com/manudicri");
                   break;
                 case "Info":
-                  showAboutDialog(context: context);
+                  PackageInfo.fromPlatform().then((PackageInfo packageInfo) {
+                    showAboutDialog(
+                      context: context,
+                      applicationName: "Piano Chords Trainer",
+                      applicationVersion: packageInfo.version,
+                    );
+                  });
+
                   break;
               }
             },
@@ -235,11 +249,25 @@ class _MyHomePageState extends State<MyHomePage> {
                     highlightColor: Colors.transparent,
                     customBorder: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(tileBorderRadius)),
-                    onTap: () {},
+                    onTap: () {
+                      if (midi.connected) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => LevelPage(level: 0),
+                          ),
+                        ).then((context) {
+                          loadStars();
+                        });
+                      } else {
+                        showMidiAlertDialog();
+                      }
+                    },
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                           vertical: 25, horizontal: 20),
                       child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
                             "ENDLESS RANDOM MODE",
@@ -247,6 +275,10 @@ class _MyHomePageState extends State<MyHomePage> {
                               color: Colors.white,
                               fontSize: 15,
                             ),
+                          ),
+                          Icon(
+                            Icons.shuffle,
+                            color: colors[5],
                           ),
                         ],
                       ),
@@ -298,24 +330,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               loadStars();
                             });
                           } else {
-                            showDialog(
-                              context: context,
-                              builder: (context) {
-                                return AlertDialog(
-                                  title: Text("Warning"),
-                                  content: Text("Connect to MIDI device first"),
-                                  actions: [
-                                    TextButton(
-                                      child: Text("OK"),
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                        showMidiDevicesDialog();
-                                      },
-                                    )
-                                  ],
-                                );
-                              },
-                            );
+                            showMidiAlertDialog();
                           }
                         },
                         child: Padding(
@@ -374,6 +389,26 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 );
               },
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 0),
+              child: Column(
+                children: [
+                  Text(
+                    "Developed by",
+                    style: TextStyle(
+                      color: Color(0x66000000),
+                      fontSize: 10,
+                    ),
+                  ),
+                  Text(
+                    "Manuel Di Criscito",
+                    style: TextStyle(
+                      color: Color(0x66000000),
+                    ),
+                  )
+                ],
+              ),
             ),
           ],
         ),

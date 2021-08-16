@@ -54,6 +54,7 @@ List<ChordType> chordTypes = [
     ),
     notes: [0, 4, 8],
     levels: [9, 11, 12, 27],
+    prob: 5,
   ),
   ChordType(
     name: "Diminished triad",
@@ -63,7 +64,7 @@ List<ChordType> chordTypes = [
     ),
     notes: [0, 3, 6],
     levels: [10, 11, 12, 27],
-    prob: 50,
+    prob: 5,
   ),
   ChordType(
     name: "Dominant seventh",
@@ -73,7 +74,7 @@ List<ChordType> chordTypes = [
     ),
     notes: [0, 4, 7, 10],
     levels: [6, 7, 8, 18, 23, 27],
-    prob: 50,
+    prob: 20,
   ),
   ChordType(
     name: "Major seventh",
@@ -83,7 +84,7 @@ List<ChordType> chordTypes = [
     ),
     notes: [0, 4, 7, 11],
     levels: [4, 7, 8, 18, 23, 27],
-    prob: 50,
+    prob: 20,
   ),
   ChordType(
     name: "Minor seventh",
@@ -93,7 +94,7 @@ List<ChordType> chordTypes = [
     ),
     notes: [0, 3, 7, 10],
     levels: [5, 7, 8, 18, 23, 27],
-    prob: 50,
+    prob: 20,
   ),
   ChordType(
     name: "Major ninth",
@@ -103,7 +104,7 @@ List<ChordType> chordTypes = [
     ),
     notes: [0, 4, 7, 11, 2],
     levels: [13, 17, 18, 23, 27],
-    prob: 50,
+    prob: 10,
   ),
   ChordType(
     name: "Dominant ninth",
@@ -113,7 +114,7 @@ List<ChordType> chordTypes = [
     ),
     notes: [0, 4, 7, 10, 2],
     levels: [15, 17, 18, 23, 27],
-    prob: 50,
+    prob: 10,
   ),
   ChordType(
     name: "Dominant minor ninth",
@@ -123,7 +124,7 @@ List<ChordType> chordTypes = [
     ),
     notes: [0, 4, 7, 10, 1],
     levels: [16, 17, 18, 23, 27],
-    prob: 50,
+    prob: 10,
   ),
   ChordType(
     name: "Minor ninth",
@@ -133,7 +134,7 @@ List<ChordType> chordTypes = [
     ),
     notes: [0, 3, 7, 10, 2],
     levels: [14, 17, 18, 23, 27],
-    prob: 50,
+    prob: 10,
   ),
   ChordType(
     name: "Eleventh",
@@ -143,7 +144,7 @@ List<ChordType> chordTypes = [
     ),
     notes: [0, 4, 7, 10, 2, 5],
     levels: [19, 22, 23, 27],
-    prob: 50,
+    prob: 5,
   ),
   ChordType(
     name: "Major eleventh",
@@ -153,7 +154,7 @@ List<ChordType> chordTypes = [
     ),
     notes: [0, 4, 7, 11, 2, 5],
     levels: [20, 22, 23, 27],
-    prob: 50,
+    prob: 5,
   ),
   ChordType(
     name: "Minor eleventh",
@@ -163,7 +164,7 @@ List<ChordType> chordTypes = [
     ),
     notes: [0, 3, 7, 10, 2, 5],
     levels: [21, 22, 23, 27],
-    prob: 50,
+    prob: 5,
   ),
   ChordType(
     name: "Major thirteenth",
@@ -173,7 +174,7 @@ List<ChordType> chordTypes = [
     ),
     notes: [0, 4, 7, 11, 2, 5, 9],
     levels: [25, 27],
-    prob: 50,
+    prob: 5,
   ),
   ChordType(
     name: "Thirteenth",
@@ -183,6 +184,7 @@ List<ChordType> chordTypes = [
     ),
     notes: [0, 4, 7, 10, 2, 5, 9],
     levels: [24, 27],
+    prob: 5,
   ),
   ChordType(
     name: "Minor thirteenth",
@@ -192,6 +194,7 @@ List<ChordType> chordTypes = [
     ),
     notes: [0, 3, 7, 11, 2, 5, 9],
     levels: [26, 27],
+    prob: 5,
   ),
   ChordType(
     name: "6/9",
@@ -201,7 +204,7 @@ List<ChordType> chordTypes = [
     ),
     notes: [0, 4, 7, 9],
     levels: [0],
-    prob: 50,
+    prob: 5,
   ),
   ChordType(
     name: "Major sixth",
@@ -210,6 +213,7 @@ List<ChordType> chordTypes = [
       long: sup6,
     ),
     notes: [0, 4, 7, 9],
+    prob: 10,
   ),
   ChordType(
     name: "Minor sixth",
@@ -218,6 +222,7 @@ List<ChordType> chordTypes = [
       long: "minor" + sup6,
     ),
     notes: [0, 3, 7, 9],
+    prob: 10,
   ),
 ];
 
@@ -229,7 +234,7 @@ List<ChordSus> chordSus = [
   ),
   ChordSus(
     name: "Suspended second",
-    text: "<sup>sus2</sup>|<sup>sus</sup>",
+    text: "<sup>sus2</sup>",
     note: 2,
   ),
 ];

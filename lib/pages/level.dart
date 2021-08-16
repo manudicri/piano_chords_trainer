@@ -22,7 +22,6 @@ class LevelPage extends StatefulWidget {
 }
 
 class _LevelPageState extends State<LevelPage> {
-  MidiCommand _midiCommand = MidiCommand();
   Random random = new Random();
   late StreamSubscription<String> _setupSubscription;
   late StreamSubscription<MidiPacket> _rxSubscription;
@@ -34,6 +33,7 @@ class _LevelPageState extends State<LevelPage> {
   int counter = 0;
   int counterMax = 20;
   Timer? _everyHalfSecond;
+  bool randomMode = false;
 
   String pickOne(String s) {
     var split = s.split("|");
@@ -47,24 +47,58 @@ class _LevelPageState extends State<LevelPage> {
   Chord generateChord() {
     var notationSetting = "Long"; // or Long
 
-    var levelChordTypes =
-        chordTypes.where((c) => c.levels.contains(widget.level)).toList();
+    var levelChordTypes = randomMode
+        ? chordTypes
+        : chordTypes.where((c) => c.levels.contains(widget.level)).toList();
+
     Chord chord = new Chord();
+
+    if (!randomMode) {
+      chord.type = levelChordTypes[random.nextInt(levelChordTypes.length)];
+    } else {
+      chord.setRandomChordType();
+    }
     chord
-      ..type = levelChordTypes[random.nextInt(levelChordTypes.length)]
       ..offset = random.nextInt(12)
       ..notes = List.from(chord.type.notes);
 
-    var levelChordAdds =
-        chordAdds.where((c) => c.levels.contains(widget.level)).toList();
-    if (levelChordAdds.isNotEmpty) {
-      chord.add = levelChordAdds[random.nextInt(levelChordAdds.length)];
-    }
-    var levelChordSus =
-        chordSus.where((c) => c.levels.contains(widget.level)).toList();
+    var levelChordSus = randomMode
+        ? chordSus
+        : chordSus.where((c) => c.levels.contains(widget.level)).toList();
     if (levelChordSus.isNotEmpty) {
-      chord.sus = levelChordSus[random.nextInt(levelChordSus.length)];
+      if ((randomMode && getRandomBool(5)) || !randomMode) {
+        chord.sus = levelChordSus[random.nextInt(levelChordSus.length)];
+        chord.notes.remove((n) => n == 3 || n == 4);
+        chord.notes.add(chord.sus!.note);
+      }
     }
+
+    var levelChordAdds = randomMode
+        ? chordAdds
+        : chordAdds.where((c) => c.levels.contains(widget.level)).toList();
+    if (levelChordAdds.isNotEmpty) {
+      if ((randomMode && getRandomBool(5)) || !randomMode) {
+        chord.add = levelChordAdds[random.nextInt(levelChordAdds.length)];
+        chord.notes.add(chord.add!.note);
+
+        for (var type in chordTypes) {
+          bool found = true;
+          if (type.notes.length == chord.notes.length) {
+            for (var n in chord.notes) {
+              if (!type.notes.contains(n)) found = false;
+            }
+          } else
+            found = false;
+          if (found) {
+            chord.type = type;
+            chord.notes = chord.type.notes;
+            chord.add = null;
+            break;
+          }
+        }
+      }
+    }
+
     var noteText = pickOne(keyNotes[chord.offset]);
     var notation = "";
     var extra = "";
@@ -78,11 +112,11 @@ class _LevelPageState extends State<LevelPage> {
       default:
         notation = pickOne(chord.type.text.long);
     }
-    if (chord.add != null) {
-      extra += "<sup>add" + pickOne(chord.add!.text) + "</sup>";
-    }
     if (chord.sus != null) {
       extra += pickOne(chord.sus!.text);
+    }
+    if (chord.add != null) {
+      extra += "<sup>add" + pickOne(chord.add!.text) + "</sup>";
     }
     chord.text = noteText + notation + extra;
     return chord;
@@ -91,9 +125,9 @@ class _LevelPageState extends State<LevelPage> {
   void waitNextChord() {
     if (!waitForKeysUp) {
       waitForKeysUp = true;
-      if (counter == 0) timer.start();
+      if (counter == 0 && !randomMode) timer.start();
       counter++;
-      if (counter == counterMax) {
+      if (counter == counterMax && !randomMode) {
         timer.end();
         double seconds = timer.getSeconds();
         Navigator.push(
@@ -151,6 +185,7 @@ class _LevelPageState extends State<LevelPage> {
 
   @override
   void initState() {
+    randomMode = widget.level == 0;
     super.initState();
     if (!midi.connected) MidiCommand().connectToDevice(midi.device!);
     this._setupSubscription = MidiCommand().onMidiSetupChanged!.listen((data) {
@@ -193,72 +228,69 @@ class _LevelPageState extends State<LevelPage> {
     return Scaffold(
       backgroundColor: colors[5],
       appBar: AppBar(
-        title: Text("Level " + widget.level.toString()),
+        title: Text(
+            !randomMode ? "Level " + widget.level.toString() : "Random mode"),
         brightness: Brightness.dark,
         backgroundColor: waitForKeysUp
             ? Color(0xff32a852)
             : notCorrect
                 ? Color(0xffa31808)
                 : colors[2],
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: Icon(Icons.settings),
-          ),
-        ],
       ),
       body: Column(
         children: [
-          Container(
-            margin: const EdgeInsets.only(top: 20, left: 20, right: 20),
-            height: 60,
-            decoration: BoxDecoration(
-              color: colors[5],
-              border: Border.all(
-                color: colors[5],
-              ),
-              borderRadius: BorderRadius.all(
-                Radius.circular(10),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.15),
-                  spreadRadius: 2,
-                  blurRadius: 5,
-                  offset: Offset(0, 3), // changes position of shadow
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Expanded(
-                  child: Center(
-                    child: Text(
-                      counter.toString() + "/" + counterMax.toString(),
-                      style: TextStyle(
-                        color: colors[2],
-                        fontSize: 25,
-                      ),
+          !randomMode
+              ? Container(
+                  margin: const EdgeInsets.only(top: 20, left: 20, right: 20),
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: colors[5],
+                    border: Border.all(
+                      color: colors[5],
                     ),
-                  ),
-                ),
-                VerticalDivider(),
-                Expanded(
-                  child: Center(
-                    child: Text(
-                      timer.getSeconds().toString().split(".")[0] + "s",
-                      style: TextStyle(
-                        color: colors[2],
-                        //fontWeight: FontWeight.bold,
-                        fontSize: 25,
-                      ),
+                    borderRadius: BorderRadius.all(
+                      Radius.circular(10),
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.15),
+                        spreadRadius: 2,
+                        blurRadius: 5,
+                        offset: Offset(0, 3), // changes position of shadow
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-          ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            counter.toString() + "/" + counterMax.toString(),
+                            style: TextStyle(
+                              color: colors[2],
+                              fontSize: 25,
+                            ),
+                          ),
+                        ),
+                      ),
+                      VerticalDivider(),
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            timer.getSeconds().toString().split(".")[0] + "s",
+                            style: TextStyle(
+                              color: colors[2],
+                              //fontWeight: FontWeight.bold,
+                              fontSize: 25,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : Container(),
           Container(
             margin: EdgeInsets.only(top: 30),
             child: GestureDetector(
