@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:piano_chords_trainer/pages/level.dart';
 import 'package:piano_chords_trainer/pages/settings.dart';

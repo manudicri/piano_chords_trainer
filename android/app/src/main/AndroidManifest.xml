@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.piano_chords_trainer">
+    package="it.manueldicriscito.piano_chords_trainer">
    <application
-        android:label="piano_chords_trainer"
+        android:label="Piano Chords Trainer"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
